@@ -1,7 +1,9 @@
 import Link from "next/link";
 import BumblebeeLogo from "@/components/BumblebeeLogo";
+import { requireSetupComplete } from "@/lib/auth";
 
 export default function HomePage() {
+  requireSetupComplete();
   return (
     <div className="flex flex-col min-h-screen">
       {/* Nav */}

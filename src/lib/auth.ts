@@ -8,7 +8,12 @@ const COOKIE_NAME = "bb_admin_session";
 const JWT_ALG = "HS256";
 
 function getJwtSecret(): Uint8Array {
-  const raw = process.env.JWT_SECRET ?? "bumblebee-berries-secret-change-me";
+  const raw = process.env.JWT_SECRET;
+  if (!raw) {
+    throw new Error(
+      "JWT_SECRET is not set. Check your .env.local file or restart the server."
+    );
+  }
   return new TextEncoder().encode(raw);
 }
 
@@ -20,9 +25,7 @@ export async function signAdminToken(): Promise<string> {
     .sign(getJwtSecret());
 }
 
-export async function verifyAdminToken(
-  token: string
-): Promise<boolean> {
+export async function verifyAdminToken(token: string): Promise<boolean> {
   try {
     await jwtVerify(token, getJwtSecret());
     return true;
@@ -38,38 +41,43 @@ export async function getAdminSession(): Promise<boolean> {
   return verifyAdminToken(token);
 }
 
-export async function requireAdmin(): Promise<void> {
-  const ok = await getAdminSession();
-  if (!ok) redirect("/admin/login");
-}
-
 export function getAdminSessionCookieName(): string {
   return COOKIE_NAME;
 }
 
-// ── Password management ───────────────────────────────────────────────────────
+// ── Setup & password management ───────────────────────────────────────────────
 
-const DEFAULT_PASSWORD = "berries2025";
+/** Returns true once an admin password has been set. */
+export function isSetupComplete(): boolean {
+  return !!getSetting("admin_password_hash");
+}
 
 /**
- * Returns the hashed admin password from the DB, seeding a default on first run.
+ * Server-side guard: redirects to /setup if no admin password has been set yet.
+ * Call this at the top of any server page that should be inaccessible before setup.
  */
-export function getAdminPasswordHash(): string {
-  let hash = getSetting("admin_password_hash");
-  if (!hash) {
-    hash = bcrypt.hashSync(DEFAULT_PASSWORD, 10);
-    setSetting("admin_password_hash", hash);
-    console.log("\n========================================");
-    console.log("  Admin password not set.");
-    console.log(`  Default password: ${DEFAULT_PASSWORD}`);
-    console.log("  Change it in the Admin Settings panel.");
-    console.log("========================================\n");
-  }
-  return hash;
+export function requireSetupComplete(): void {
+  if (!isSetupComplete()) redirect("/setup");
+}
+
+/**
+ * Server-side guard: redirects to / if setup is already done.
+ * Call this in the /setup page so it can't be revisited.
+ */
+export function requireSetupIncomplete(): void {
+  if (isSetupComplete()) redirect("/");
+}
+
+/** Redirects to /admin/login if the admin session cookie is invalid. */
+export async function requireAdmin(): Promise<void> {
+  requireSetupComplete();
+  const ok = await getAdminSession();
+  if (!ok) redirect("/admin/login");
 }
 
 export async function verifyAdminPassword(password: string): Promise<boolean> {
-  const hash = getAdminPasswordHash();
+  const hash = getSetting("admin_password_hash");
+  if (!hash) return false;
   return bcrypt.compare(password, hash);
 }
 
