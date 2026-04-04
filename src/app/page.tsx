@@ -67,17 +67,20 @@ export default function HomePage() {
       <section className="bg-white border-t border-honey-100 py-14">
         <div className="max-w-4xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10 text-center">
           <FeatureCard
-            emoji="🫐"
+            icon={
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src="/raspberry.png" alt="Raspberries" className="w-14 h-14 object-contain" />
+            }
             title="One product, done right"
             body="We grow one thing — fresh raspberries — and we grow it well. No shortcuts."
           />
           <FeatureCard
-            emoji="📅"
+            icon="📅"
             title="Pick your day"
             body="Choose a pickup date that suits you. We'll have your cup ready and waiting."
           />
           <FeatureCard
-            emoji="🏡"
+            icon="🏡"
             title="Truly local"
             body="Grown just around the corner. Picked the same day you pick them up."
           />
@@ -111,22 +114,23 @@ export default function HomePage() {
 }
 
 function FeatureCard({
-  emoji,
+  icon,
   title,
   body,
 }: {
-  emoji: string;
+  icon: React.ReactNode;
   title: string;
   body: string;
 }) {
   return (
     <div className="flex flex-col items-center gap-3">
-      <span className="text-5xl">{emoji}</span>
+      <span className="text-5xl flex items-center justify-center">{icon}</span>
       <h3 className="font-semibold text-lg text-gray-800">{title}</h3>
       <p className="text-gray-500 text-sm leading-relaxed">{body}</p>
     </div>
   );
 }
+
 
 function RaspberryBasketIllustration({ className }: { className?: string }) {
   return (
