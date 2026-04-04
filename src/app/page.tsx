@@ -13,17 +13,6 @@ export default function HomePage() {
               Bumblebee Berries
             </span>
           </div>
-          <div className="flex gap-4 text-sm font-medium text-honey-800">
-            <Link href="/order" className="hover:text-honey-900 transition-colors">
-              Order
-            </Link>
-            <Link
-              href="/admin/login"
-              className="hover:text-honey-900 transition-colors"
-            >
-              Admin
-            </Link>
-          </div>
         </div>
       </nav>
 
