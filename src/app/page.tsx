@@ -2,6 +2,8 @@ import Link from "next/link";
 import BumblebeeLogo from "@/components/BumblebeeLogo";
 import { requireSetupComplete } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 export default function HomePage() {
   requireSetupComplete();
   return (

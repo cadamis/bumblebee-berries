@@ -2,6 +2,8 @@ import { requireSetupIncomplete } from "@/lib/auth";
 import SetupForm from "@/components/SetupForm";
 import BumblebeeLogo from "@/components/BumblebeeLogo";
 
+export const dynamic = "force-dynamic";
+
 export default function SetupPage() {
   requireSetupIncomplete(); // Redirect away if already set up
   return (
