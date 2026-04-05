@@ -5,23 +5,21 @@ export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as {
       customer_name?: string;
-      customer_email?: string;
       customer_phone?: string;
       order_date?: string;
       quantity?: number;
     };
 
-    const { customer_name, customer_email, customer_phone, order_date } = body;
+    const { customer_name, customer_phone, order_date } = body;
     const quantity = body.quantity ?? 1;
 
-    if (!customer_name || !customer_email || !customer_phone || !order_date) {
+    if (!customer_name || !customer_phone || !order_date) {
       return NextResponse.json(
         { error: "Missing required fields." },
         { status: 400 }
       );
     }
 
-    // Validate date is not in the past
     const today = new Date().toISOString().split("T")[0] as string;
     if (order_date < today) {
       return NextResponse.json(
@@ -30,7 +28,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check availability
     const [day] = getAvailability(order_date, 1);
     if (!day || day.available < quantity) {
       return NextResponse.json(
@@ -39,14 +36,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const order = createOrder({
-      customer_name,
-      customer_email,
-      customer_phone,
-      order_date,
-      quantity,
-    });
-
+    const order = createOrder({ customer_name, customer_phone, order_date, quantity });
     return NextResponse.json(order, { status: 201 });
   } catch (err) {
     console.error(err);

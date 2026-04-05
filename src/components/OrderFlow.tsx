@@ -34,7 +34,7 @@ export default function OrderFlow({ days, pricePerCup }: Props) {
   const [step, setStep] = useState<Step>("calendar");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const [form, setForm] = useState({ name: "", email: "", phone: "" });
+  const [form, setForm] = useState({ name: "", phone: "" });
   const [errors, setErrors] = useState<Partial<typeof form>>({});
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -61,8 +61,6 @@ export default function OrderFlow({ days, pricePerCup }: Props) {
   function validate() {
     const errs: Partial<typeof form> = {};
     if (!form.name.trim()) errs.name = "Name is required.";
-    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-      errs.email = "Valid email is required.";
     if (!form.phone.trim()) errs.phone = "Phone number is required.";
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -83,7 +81,6 @@ export default function OrderFlow({ days, pricePerCup }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customer_name: form.name,
-          customer_email: form.email,
           customer_phone: form.phone,
           order_date: selectedDate,
           quantity,
@@ -260,15 +257,6 @@ export default function OrderFlow({ days, pricePerCup }: Props) {
                   placeholder="Jane Smith"
                 />
                 <Field
-                  label="Email"
-                  id="email"
-                  type="email"
-                  value={form.email}
-                  error={errors.email}
-                  onChange={(v) => setForm((f) => ({ ...f, email: v }))}
-                  placeholder="jane@example.com"
-                />
-                <Field
                   label="Phone"
                   id="phone"
                   type="tel"
@@ -310,7 +298,6 @@ export default function OrderFlow({ days, pricePerCup }: Props) {
                   value={`$${formatTotal(total)} (pay at pickup)`}
                 />
                 <Row label="Name" value={form.name} />
-                <Row label="Email" value={form.email} />
                 <Row label="Phone" value={form.phone} />
               </div>
 

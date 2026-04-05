@@ -2,10 +2,14 @@ import Database from "better-sqlite3";
 import path from "path";
 import { existsSync, mkdirSync } from "fs";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+// DATA_DIR can be set explicitly via env var (recommended in production).
+// Falls back to <cwd>/data for local development.
+const DATA_DIR = process.env.DATA_DIR ?? path.join(process.cwd(), "data");
 if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 
 const DB_PATH = path.join(DATA_DIR, "bumblebee.db");
+
+console.log(`[db] Using database at: ${DB_PATH}`);
 
 let _db: Database.Database | null = null;
 
@@ -28,7 +32,6 @@ function initSchema(db: Database.Database) {
     CREATE TABLE IF NOT EXISTS orders (
       id               INTEGER PRIMARY KEY AUTOINCREMENT,
       customer_name    TEXT NOT NULL,
-      customer_email   TEXT NOT NULL,
       customer_phone   TEXT NOT NULL,
       order_date       TEXT NOT NULL,
       quantity         INTEGER NOT NULL DEFAULT 1,
@@ -40,14 +43,27 @@ function initSchema(db: Database.Database) {
       date      TEXT PRIMARY KEY,
       max_cups  INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS helpers (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      name        TEXT NOT NULL,
+      phone       TEXT NOT NULL DEFAULT '',
+      cups_picked INTEGER NOT NULL DEFAULT 0,
+      amount_paid REAL    NOT NULL DEFAULT 0,
+      created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   // Seed default settings if they don't exist
   const setDefault = db.prepare(
     "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)"
   );
-  setDefault.run("price_per_cup", "5.00");
+  setDefault.run("price_per_cup", "3.00");
   setDefault.run("default_daily_cap", "20");
+  setDefault.run("inventory_cups", "0");
+  setDefault.run("helper_pay_rate", "2.50");
+  setDefault.run("schedule_weeks", "2");
+  setDefault.run("schedule_last_day", "");
 }
 
 // ── Settings helpers ──────────────────────────────────────────────────────────
@@ -114,7 +130,6 @@ export function getAvailability(
 export interface Order {
   id: number;
   customer_name: string;
-  customer_email: string;
   customer_phone: string;
   order_date: string;
   quantity: number;
@@ -124,15 +139,14 @@ export interface Order {
 
 export function createOrder(data: {
   customer_name: string;
-  customer_email: string;
   customer_phone: string;
   order_date: string;
   quantity: number;
 }): Order {
   const db = getDb();
   const stmt = db.prepare(`
-    INSERT INTO orders (customer_name, customer_email, customer_phone, order_date, quantity)
-    VALUES (@customer_name, @customer_email, @customer_phone, @order_date, @quantity)
+    INSERT INTO orders (customer_name, customer_phone, order_date, quantity)
+    VALUES (@customer_name, @customer_phone, @order_date, @quantity)
   `);
   const info = stmt.run(data);
   return db
@@ -159,4 +173,45 @@ export function updateOrderStatus(
   getDb()
     .prepare("UPDATE orders SET status = ? WHERE id = ?")
     .run(status, id);
+}
+
+// ── Helper helpers ─────────────────────────────────────────────────────────────
+
+export interface Helper {
+  id: number;
+  name: string;
+  phone: string;
+  cups_picked: number;
+  amount_paid: number;
+  created_at: string;
+}
+
+export function getAllHelpers(): Helper[] {
+  return getDb()
+    .prepare("SELECT * FROM helpers ORDER BY name ASC")
+    .all() as Helper[];
+}
+
+export function createHelper(data: { name: string; phone: string }): Helper {
+  const db = getDb();
+  const info = db
+    .prepare("INSERT INTO helpers (name, phone) VALUES (@name, @phone)")
+    .run(data);
+  return db.prepare("SELECT * FROM helpers WHERE id = ?").get(info.lastInsertRowid) as Helper;
+}
+
+export function updateHelper(
+  id: number,
+  data: { cups_picked?: number; amount_paid?: number; name?: string; phone?: string }
+): void {
+  const fields = Object.keys(data)
+    .map((k) => `${k} = @${k}`)
+    .join(", ");
+  getDb()
+    .prepare(`UPDATE helpers SET ${fields} WHERE id = @id`)
+    .run({ ...data, id });
+}
+
+export function deleteHelper(id: number): void {
+  getDb().prepare("DELETE FROM helpers WHERE id = ?").run(id);
 }

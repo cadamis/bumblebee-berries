@@ -22,6 +22,10 @@ export async function POST(req: NextRequest) {
   const body = (await req.json()) as {
     price_per_cup?: string;
     default_daily_cap?: string;
+    inventory_cups?: string;
+    helper_pay_rate?: string;
+    schedule_weeks?: string;
+    schedule_last_day?: string;
     new_password?: string;
     day_overrides?: { date: string; max_cups: number }[];
   };
@@ -40,6 +44,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid daily cap." }, { status: 400 });
     }
     setSetting("default_daily_cap", String(cap));
+  }
+
+  if (body.inventory_cups !== undefined) {
+    const inv = parseInt(body.inventory_cups, 10);
+    if (isNaN(inv) || inv < 0) {
+      return NextResponse.json({ error: "Invalid inventory count." }, { status: 400 });
+    }
+    setSetting("inventory_cups", String(inv));
+  }
+
+  if (body.helper_pay_rate !== undefined) {
+    const rate = parseFloat(body.helper_pay_rate);
+    if (isNaN(rate) || rate < 0) {
+      return NextResponse.json({ error: "Invalid pay rate." }, { status: 400 });
+    }
+    setSetting("helper_pay_rate", rate.toFixed(2));
+  }
+
+  if (body.schedule_weeks !== undefined) {
+    const weeks = parseInt(body.schedule_weeks, 10);
+    if (isNaN(weeks) || weeks < 1) {
+      return NextResponse.json({ error: "Invalid schedule weeks." }, { status: 400 });
+    }
+    setSetting("schedule_weeks", String(weeks));
+  }
+
+  if (body.schedule_last_day !== undefined) {
+    setSetting("schedule_last_day", body.schedule_last_day);
   }
 
   if (body.new_password) {

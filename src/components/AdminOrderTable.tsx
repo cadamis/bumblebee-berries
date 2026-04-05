@@ -6,7 +6,6 @@ import { calcPricing } from "@/lib/pricing";
 interface Order {
   id: number;
   customer_name: string;
-  customer_email: string;
   customer_phone: string;
   order_date: string;
   quantity: number;
@@ -15,8 +14,10 @@ interface Order {
 }
 
 interface Props {
-  initialOrders: Order[];
+  orders: Order[];
+  setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
   pricePerCup: string;
+  onStatusChange: (order: Order, newStatus: "pending" | "fulfilled") => void;
 }
 
 const MONTHS = [
@@ -29,8 +30,7 @@ function formatDate(dateStr: string): string {
   return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
-export default function AdminOrderTable({ initialOrders, pricePerCup }: Props) {
-  const [orders, setOrders] = useState<Order[]>(initialOrders);
+export default function AdminOrderTable({ orders, setOrders, pricePerCup, onStatusChange }: Props) {
   const [filter, setFilter] = useState<"all" | "pending" | "fulfilled">("all");
   const [toggling, setToggling] = useState<Set<number>>(new Set());
 
@@ -47,6 +47,7 @@ export default function AdminOrderTable({ initialOrders, pricePerCup }: Props) {
         setOrders((prev) =>
           prev.map((o) => (o.id === order.id ? { ...o, status: newStatus } : o))
         );
+        onStatusChange(order, newStatus);
       }
     } finally {
       setToggling((s) => {
@@ -57,10 +58,8 @@ export default function AdminOrderTable({ initialOrders, pricePerCup }: Props) {
     }
   }
 
-  const filtered =
-    filter === "all" ? orders : orders.filter((o) => o.status === filter);
-
-  const pending = orders.filter((o) => o.status === "pending");
+  const filtered  = filter === "all" ? orders : orders.filter((o) => o.status === filter);
+  const pending   = orders.filter((o) => o.status === "pending");
   const fulfilled = orders.filter((o) => o.status === "fulfilled");
 
   return (
@@ -99,7 +98,7 @@ export default function AdminOrderTable({ initialOrders, pricePerCup }: Props) {
               <tr className="bg-gray-50 text-left text-xs text-gray-500 uppercase tracking-wide">
                 <th className="px-4 py-3 font-medium">#</th>
                 <th className="px-4 py-3 font-medium">Customer</th>
-                <th className="px-4 py-3 font-medium">Contact</th>
+                <th className="px-4 py-3 font-medium">Phone</th>
                 <th className="px-4 py-3 font-medium">Pickup Date</th>
                 <th className="px-4 py-3 font-medium">Cups</th>
                 <th className="px-4 py-3 font-medium">Amount Due</th>
@@ -127,8 +126,7 @@ export default function AdminOrderTable({ initialOrders, pricePerCup }: Props) {
                       {order.customer_name}
                     </td>
                     <td className="px-4 py-3 text-gray-500">
-                      <div>{order.customer_email}</div>
-                      <div className="text-xs">{order.customer_phone}</div>
+                      {order.customer_phone}
                     </td>
                     <td className="px-4 py-3 text-gray-700">
                       {formatDate(order.order_date)}

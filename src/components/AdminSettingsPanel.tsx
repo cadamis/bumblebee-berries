@@ -12,25 +12,41 @@ interface Props {
   initialPrice: string;
   initialDailyCap: string;
   initialDayConfigs: DayConfig[];
+  initialHelperPayRate: string;
+  initialScheduleWeeks: string;
+  initialScheduleLastDay: string;
 }
 
 export default function AdminSettingsPanel({
   initialPrice,
   initialDailyCap,
   initialDayConfigs,
+  initialHelperPayRate,
+  initialScheduleWeeks,
+  initialScheduleLastDay,
 }: Props) {
   const router = useRouter();
-  const [price, setPrice] = useState(initialPrice);
-  const [dailyCap, setDailyCap] = useState(initialDailyCap);
-  const [newPassword, setNewPassword] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [savedMsg, setSavedMsg] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+
+  // General settings
+  const [price, setPrice]                 = useState(initialPrice);
+  const [dailyCap, setDailyCap]           = useState(initialDailyCap);
+  const [helperPayRate, setHelperPayRate] = useState(initialHelperPayRate);
+  const [newPassword, setNewPassword]     = useState("");
+  const [saving, setSaving]               = useState(false);
+  const [savedMsg, setSavedMsg]           = useState<string | null>(null);
+  const [error, setError]                 = useState<string | null>(null);
+
+  // Schedule
+  const [scheduleWeeks, setScheduleWeeks]     = useState(initialScheduleWeeks);
+  const [scheduleLastDay, setScheduleLastDay] = useState(initialScheduleLastDay);
+  const [scheduleSaving, setScheduleSaving]   = useState(false);
+  const [scheduleSaved, setScheduleSaved]     = useState(false);
+  const [scheduleError, setScheduleError]     = useState<string | null>(null);
 
   // Day overrides
   const [overrideDate, setOverrideDate] = useState("");
   const [overrideCups, setOverrideCups] = useState("");
-  const [dayConfigs, setDayConfigs] = useState<DayConfig[]>(initialDayConfigs);
+  const [dayConfigs, setDayConfigs]     = useState<DayConfig[]>(initialDayConfigs);
   const [overrideError, setOverrideError] = useState<string | null>(null);
 
   async function save() {
@@ -40,6 +56,7 @@ export default function AdminSettingsPanel({
     const body: Record<string, string> = {
       price_per_cup: price,
       default_daily_cap: dailyCap,
+      helper_pay_rate: helperPayRate,
     };
     if (newPassword) body.new_password = newPassword;
 
@@ -61,6 +78,42 @@ export default function AdminSettingsPanel({
       setError("Network error.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function saveSchedule() {
+    setScheduleSaving(true);
+    setScheduleError(null);
+    setScheduleSaved(false);
+
+    const weeks = parseInt(scheduleWeeks, 10);
+    if (isNaN(weeks) || weeks < 1) {
+      setScheduleError("Weeks must be a number greater than 0.");
+      setScheduleSaving(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          schedule_weeks: String(weeks),
+          schedule_last_day: scheduleLastDay,
+        }),
+      });
+      if (res.ok) {
+        setScheduleSaved(true);
+        setTimeout(() => setScheduleSaved(false), 2500);
+        router.refresh();
+      } else {
+        const d = (await res.json()) as { error?: string };
+        setScheduleError(d.error ?? "Save failed.");
+      }
+    } catch {
+      setScheduleError("Network error.");
+    } finally {
+      setScheduleSaving(false);
     }
   }
 
@@ -115,7 +168,7 @@ export default function AdminSettingsPanel({
 
   return (
     <div className="space-y-8">
-      {/* Price & Cap */}
+      {/* General Settings */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
         <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
           <span className="text-xl">⚙️</span> General Settings
@@ -164,6 +217,25 @@ export default function AdminSettingsPanel({
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-honey-400 focus:border-honey-400"
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Payment amount for helpers ($ per cup)
+            </label>
+            <div className="flex items-center">
+              <span className="bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg px-3 py-2.5 text-gray-500 text-sm">
+                $
+              </span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={helperPayRate}
+                onChange={(e) => setHelperPayRate(e.target.value)}
+                className="flex-1 border border-gray-300 rounded-r-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-honey-400 focus:border-honey-400"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="mb-4">
@@ -188,7 +260,77 @@ export default function AdminSettingsPanel({
         </button>
       </div>
 
-      {/* Day overrides */}
+      {/* Schedule */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <h3 className="font-semibold text-gray-800 mb-1 flex items-center gap-2">
+          <span className="text-xl">🗓️</span> Schedule
+        </h3>
+        <p className="text-sm text-gray-500 mb-4">
+          Controls how far ahead customers can place orders.
+        </p>
+
+        {scheduleError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-2 mb-4 text-sm">
+            {scheduleError}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Number of weeks to show on orders page
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="52"
+              value={scheduleWeeks}
+              onChange={(e) => setScheduleWeeks(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-honey-400 focus:border-honey-400"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Last day to place orders
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                min={today}
+                value={scheduleLastDay}
+                onChange={(e) => setScheduleLastDay(e.target.value)}
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-honey-400 focus:border-honey-400"
+              />
+              {scheduleLastDay && (
+                <button
+                  onClick={() => setScheduleLastDay("")}
+                  className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded transition-colors"
+                  title="Clear date"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Leave blank for no cutoff date.</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={saveSchedule}
+            disabled={scheduleSaving}
+            className="bg-honey-500 hover:bg-honey-600 disabled:opacity-60 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors text-sm"
+          >
+            {scheduleSaving ? "Saving…" : "Save Schedule"}
+          </button>
+          {scheduleSaved && (
+            <span className="text-sm text-green-600 font-medium">Saved!</span>
+          )}
+        </div>
+      </div>
+
+      {/* Per-Day Cup Overrides */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
         <h3 className="font-semibold text-gray-800 mb-1 flex items-center gap-2">
           <span className="text-xl">📅</span> Per-Day Cup Overrides
