@@ -125,7 +125,7 @@ export default function AdminSchedulePanel({
   if (helpers.length === 0) {
     return (
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center">
-        <div className="text-3xl mb-3">🫐</div>
+        <div className="mb-3"><img src="/raspberry.png" alt="raspberry" className="w-8 h-8 mx-auto" /></div>
         <p className="text-gray-600 font-medium">No helpers yet.</p>
         <p className="text-sm text-gray-400 mt-1">Add helpers on the Helpers tab first.</p>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import AdminOrderTable from "@/components/AdminOrderTable";
 import AdminSettingsPanel from "@/components/AdminSettingsPanel";
 import AdminHelpersPanel from "@/components/AdminHelpersPanel";
@@ -55,9 +55,9 @@ interface Props {
 
 type Tab = "orders" | "helpers" | "schedule" | "settings";
 
-const TABS: { id: Tab; label: string; emoji: string }[] = [
+const TABS: { id: Tab; label: string; emoji: React.ReactNode }[] = [
   { id: "orders",   label: "Orders & Inventory", emoji: "📦" },
-  { id: "helpers",  label: "Helpers",             emoji: "🫐" },
+  { id: "helpers",  label: "Helpers",             emoji: <img src="/raspberry.png" alt="raspberry" className="w-4 h-4 inline-block" /> },
   { id: "schedule", label: "Schedule",            emoji: "📅" },
   { id: "settings", label: "Settings",            emoji: "⚙️" },
 ];

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
 interface Helper {
@@ -167,7 +167,7 @@ export default function AdminHelpersPanel({ helpers, setHelpers, helperPayRate, 
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <SummaryCard label="Total Helpers"  value={String(helpers.length)}       emoji="🧑‍🌾" />
-        <SummaryCard label="Pints Picked"    value={String(totalCupsPicked)}       emoji="🫐"  highlight="berry" />
+        <SummaryCard label="Pints Picked"    value={String(totalCupsPicked)}       emoji={<img src="/raspberry.png" alt="raspberry" className="w-7 h-7" />}  highlight="berry" />
         <SummaryCard label="Total Owed"     value={`$${totalOwed.toFixed(2)}`}    emoji="🧾"  highlight="yellow" />
         <SummaryCard label="Total Paid Out" value={`$${totalPaid.toFixed(2)}`}    emoji="💵"  highlight="green" />
       </div>
@@ -211,7 +211,7 @@ export default function AdminHelpersPanel({ helpers, setHelpers, helperPayRate, 
 
         {helpers.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
-            <p className="text-4xl mb-2">🫐</p>
+            <p className="mb-2"><img src="/raspberry.png" alt="raspberry" className="w-9 h-9 mx-auto" /></p>
             <p>No helpers signed up yet.</p>
           </div>
         ) : (
@@ -387,7 +387,7 @@ function SummaryCard({
 }: {
   label: string;
   value: string;
-  emoji: string;
+  emoji: React.ReactNode;
   highlight?: "berry" | "green" | "yellow";
 }) {
   const colorMap: Record<string, string> = {

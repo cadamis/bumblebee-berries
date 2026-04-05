@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import BumblebeeLogo from "@/components/BumblebeeLogo";
 import Link from "next/link";
@@ -10,6 +10,11 @@ export default function AdminLoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -68,6 +73,7 @@ export default function AdminLoginForm() {
                 Password
               </label>
               <input
+                ref={inputRef}
                 id="password"
                 type="password"
                 autoComplete="current-password"
