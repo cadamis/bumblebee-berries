@@ -127,3 +127,66 @@ To run on a different port:
 ```bash
 npm run start -- -p 8080
 ```
+
+---
+
+## Deployment
+
+### Environment variables
+
+The following environment variable **must** be set in the production environment before starting the app:
+
+| Variable | Description |
+|----------|-------------|
+| `JWT_SECRET` | Secret key used to sign admin session tokens. Must be a long, random string — **never reuse the development value in production.** |
+
+Generate a strong value with:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+On most hosting platforms (Render, Railway, Fly.io, VPS, etc.) you set this in the environment / secrets dashboard, **not** in a committed file.
+
+### Persistent data volume
+
+All application data — orders, helpers, settings, and the admin password — is stored in a single SQLite file at:
+
+```
+<project root>/data/bumblebee.db
+```
+
+This directory **must be mapped to a persistent volume** in your deployment environment. If the `data/` directory is ephemeral (e.g. inside a container with no volume mount), the database will be wiped on every deploy or restart.
+
+**Example: Docker**
+
+```dockerfile
+# In your Dockerfile / docker-compose.yml, mount data/ as a named volume:
+volumes:
+  - bumblebee_data:/app/data
+```
+
+**Example: Fly.io**
+
+```toml
+# fly.toml
+[mounts]
+  source = "bumblebee_data"
+  destination = "/app/data"
+```
+
+**Example: Railway**
+
+Railway supports persistent volumes through the dashboard:
+
+1. Open your project in the [Railway dashboard](https://railway.app).
+2. Select your service → **Settings** → **Volumes**.
+3. Click **Add Volume**, set the mount path to `/app/data`, and save.
+
+Railway deploys Node.js apps with a working directory of `/app`, so the app will use `/app/data` by default — no extra environment variable is needed.
+
+You can also override the default path by setting the `DATA_DIR` environment variable to any absolute path that is backed by persistent storage:
+
+```bash
+DATA_DIR=/mnt/persistent/bumblebee npm run start
+```

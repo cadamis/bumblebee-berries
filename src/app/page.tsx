@@ -41,7 +41,7 @@ export default function HomePage() {
           </p>
           <p className="text-base text-gray-600 mb-10 max-w-xl mx-auto">
             We grow and hand-pick small batches of sweet raspberries right here
-            in the neighborhood. Reserve your cup for pickup on a date that works
+            in the neighborhood. Reserve yours for pickup on a date that works
             for you.
           </p>
 
@@ -73,22 +73,9 @@ export default function HomePage() {
           <FeatureCard
             icon="🏡"
             title="Truly local"
-            body="Grown just around the corner. Picked the same day you pick them up."
+            body="Support your neighborhood kids!"
           />
         </div>
-      </section>
-
-      {/* CTA Banner */}
-      <section className="bg-berry-700 text-white py-12 text-center px-6">
-        <h2 className="font-display text-3xl font-bold mb-4">
-          Ready for the best raspberries you've ever tasted?
-        </h2>
-        <Link
-          href="/order"
-          className="inline-block bg-white text-berry-700 font-semibold text-lg px-10 py-3 rounded-full shadow hover:bg-berry-50 transition-colors"
-        >
-          Reserve a Cup Now
-        </Link>
       </section>
 
       {/* Footer */}

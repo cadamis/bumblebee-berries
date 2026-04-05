@@ -18,6 +18,7 @@ interface Props {
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
   pricePerCup: string;
   onStatusChange: (order: Order, newStatus: "pending" | "fulfilled") => void;
+  invCups: number;
 }
 
 const MONTHS = [
@@ -30,8 +31,8 @@ function formatDate(dateStr: string): string {
   return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
-export default function AdminOrderTable({ orders, setOrders, pricePerCup, onStatusChange }: Props) {
-  const [filter, setFilter] = useState<"all" | "pending" | "fulfilled">("all");
+export default function AdminOrderTable({ orders, setOrders, pricePerCup, invCups, onStatusChange }: Props) {
+  const [filter, setFilter] = useState<"all" | "pending" | "fulfilled">("pending");
   const [toggling, setToggling] = useState<Set<number>>(new Set());
 
   async function toggleStatus(order: Order) {
@@ -100,7 +101,7 @@ export default function AdminOrderTable({ orders, setOrders, pricePerCup, onStat
                 <th className="px-4 py-3 font-medium">Customer</th>
                 <th className="px-4 py-3 font-medium">Phone</th>
                 <th className="px-4 py-3 font-medium">Pickup Date</th>
-                <th className="px-4 py-3 font-medium">Cups</th>
+                <th className="px-4 py-3 font-medium">Pints</th>
                 <th className="px-4 py-3 font-medium">Amount Due</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Action</th>
@@ -159,21 +160,34 @@ export default function AdminOrderTable({ orders, setOrders, pricePerCup, onStat
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => toggleStatus(order)}
-                        disabled={toggling.has(order.id)}
-                        className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 ${
-                          order.status === "pending"
-                            ? "bg-green-600 hover:bg-green-700 text-white"
-                            : "bg-gray-200 hover:bg-gray-300 text-gray-700"
-                        }`}
-                      >
-                        {toggling.has(order.id)
-                          ? "…"
-                          : order.status === "pending"
-                          ? "Mark Fulfilled"
-                          : "Mark Pending"}
-                      </button>
+                      {(() => {
+                        const canFulfill = order.status !== "pending" || invCups >= order.quantity;
+                        return (
+                          <div className="flex flex-col gap-1">
+                            <button
+                              onClick={() => toggleStatus(order)}
+                              disabled={toggling.has(order.id) || !canFulfill}
+                              title={!canFulfill ? `Not enough pints on hand (need ${order.quantity}, have ${invCups})` : undefined}
+                              className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40 ${
+                                order.status === "pending"
+                                  ? "bg-green-600 hover:bg-green-700 text-white"
+                                  : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                              }`}
+                            >
+                              {toggling.has(order.id)
+                                ? "…"
+                                : order.status === "pending"
+                                ? "Mark Fulfilled"
+                                : "Mark Pending"}
+                            </button>
+                            {order.status === "pending" && !canFulfill && (
+                              <span className="text-xs text-red-500">
+                                Need {order.quantity}, have {invCups}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                   </tr>
                 );

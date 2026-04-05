@@ -15,6 +15,7 @@ interface Props {
   initialHelperPayRate: string;
   initialScheduleWeeks: string;
   initialScheduleLastDay: string;
+  initialScheduleFirstDay: string;
 }
 
 export default function AdminSettingsPanel({
@@ -24,6 +25,7 @@ export default function AdminSettingsPanel({
   initialHelperPayRate,
   initialScheduleWeeks,
   initialScheduleLastDay,
+  initialScheduleFirstDay,
 }: Props) {
   const router = useRouter();
 
@@ -37,8 +39,9 @@ export default function AdminSettingsPanel({
   const [error, setError]                 = useState<string | null>(null);
 
   // Schedule
-  const [scheduleWeeks, setScheduleWeeks]     = useState(initialScheduleWeeks);
-  const [scheduleLastDay, setScheduleLastDay] = useState(initialScheduleLastDay);
+  const [scheduleWeeks, setScheduleWeeks]         = useState(initialScheduleWeeks);
+  const [scheduleFirstDay, setScheduleFirstDay]   = useState(initialScheduleFirstDay);
+  const [scheduleLastDay, setScheduleLastDay]     = useState(initialScheduleLastDay);
   const [scheduleSaving, setScheduleSaving]   = useState(false);
   const [scheduleSaved, setScheduleSaved]     = useState(false);
   const [scheduleError, setScheduleError]     = useState<string | null>(null);
@@ -99,6 +102,7 @@ export default function AdminSettingsPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           schedule_weeks: String(weeks),
+          schedule_first_day: scheduleFirstDay,
           schedule_last_day: scheduleLastDay,
         }),
       });
@@ -125,7 +129,7 @@ export default function AdminSettingsPanel({
     }
     const cups = parseInt(overrideCups, 10);
     if (isNaN(cups) || cups < 0) {
-      setOverrideError("Enter a valid number of cups (0 or more).");
+      setOverrideError("Enter a valid number of pints (0 or more).");
       return;
     }
 
@@ -188,7 +192,7 @@ export default function AdminSettingsPanel({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Price per cup ($)
+              Price per pint ($)
             </label>
             <div className="flex items-center">
               <span className="bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg px-3 py-2.5 text-gray-500 text-sm">
@@ -207,7 +211,7 @@ export default function AdminSettingsPanel({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Default daily cup limit
+              Default daily pint limit
             </label>
             <input
               type="number"
@@ -220,7 +224,7 @@ export default function AdminSettingsPanel({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Payment amount for helpers ($ per cup)
+              Payment amount for helpers ($ per pint)
             </label>
             <div className="flex items-center">
               <span className="bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg px-3 py-2.5 text-gray-500 text-sm">
@@ -289,32 +293,51 @@ export default function AdminSettingsPanel({
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-honey-400 focus:border-honey-400"
             />
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Last day to place orders
-            </label>
-            <div className="flex items-center gap-2">
-              <input
-                type="date"
-                min={today}
-                value={scheduleLastDay}
-                onChange={(e) => setScheduleLastDay(e.target.value)}
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-honey-400 focus:border-honey-400"
-              />
-              {scheduleLastDay && (
-                <button
-                  onClick={() => setScheduleLastDay("")}
-                  className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded transition-colors"
-                  title="Clear date"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-            <p className="text-xs text-gray-400 mt-1">Leave blank for no cutoff date.</p>
-          </div>
         </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            First &amp; last day to place orders
+          </label>
+          <div className="flex items-center gap-2">
+              <div className="flex items-center flex-1 gap-2">
+                <input
+                  type="date"
+                  value={scheduleFirstDay}
+                  onChange={(e) => setScheduleFirstDay(e.target.value)}
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-honey-400 focus:border-honey-400"
+                />
+                {scheduleFirstDay && (
+                  <button
+                    onClick={() => setScheduleFirstDay("")}
+                    className="text-xs text-gray-400 hover:text-gray-600 px-1 transition-colors"
+                    title="Clear first day"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              <span className="text-gray-400 text-sm shrink-0">to</span>
+              <div className="flex items-center flex-1 gap-2">
+                <input
+                  type="date"
+                  value={scheduleLastDay}
+                  onChange={(e) => setScheduleLastDay(e.target.value)}
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-honey-400 focus:border-honey-400"
+                />
+                {scheduleLastDay && (
+                  <button
+                    onClick={() => setScheduleLastDay("")}
+                    className="text-xs text-gray-400 hover:text-gray-600 px-1 transition-colors"
+                    title="Clear last day"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Leave either blank for no cutoff.</p>
+          </div>
 
         <div className="flex items-center gap-3">
           <button
@@ -333,10 +356,10 @@ export default function AdminSettingsPanel({
       {/* Per-Day Cup Overrides */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
         <h3 className="font-semibold text-gray-800 mb-1 flex items-center gap-2">
-          <span className="text-xl">📅</span> Per-Day Cup Overrides
+          <span className="text-xl">📅</span> Per-Day Pint Overrides
         </h3>
         <p className="text-sm text-gray-500 mb-4">
-          Override the daily cup limit for specific dates (e.g., set to 0 to
+          Override the daily pint limit for specific dates (e.g., set to 0 to
           block a date).
         </p>
 
@@ -359,7 +382,7 @@ export default function AdminSettingsPanel({
             min="0"
             value={overrideCups}
             onChange={(e) => setOverrideCups(e.target.value)}
-            placeholder="Max cups"
+            placeholder="Max pints"
             className="w-28 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-honey-400"
           />
           <button
@@ -382,7 +405,7 @@ export default function AdminSettingsPanel({
                 <span className="text-gray-700">{cfg.date}</span>
                 <div className="flex items-center gap-4">
                   <span className="font-medium text-gray-800">
-                    {cfg.max_cups} cups max
+                    {cfg.max_cups} pints max
                   </span>
                   <button
                     onClick={() => removeOverride(cfg.date)}

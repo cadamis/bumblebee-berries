@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { signAdminToken, verifyAdminPassword } from "@/lib/auth";
-import { getAdminSessionCookieName } from "@/lib/auth";
+import { signAdminToken, verifyAdminPassword, getAdminSessionCookieName } from "@/lib/auth";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+
+// 5 failed attempts per 15 minutes per IP
+const LOGIN_LIMIT = 5;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+
+    if (!rateLimit(`login:${ip}`, LOGIN_LIMIT, LOGIN_WINDOW_MS)) {
+      return NextResponse.json(
+        { error: "Too many login attempts. Try again later." },
+        { status: 429 }
+      );
+    }
+
     const body = (await req.json()) as { password?: string };
     if (!body.password) {
       return NextResponse.json({ error: "Password required." }, { status: 400 });
@@ -20,7 +33,7 @@ export async function POST(req: NextRequest) {
       httpOnly: true,
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24, // 24 hours
+      maxAge: 60 * 60 * 24,
       secure: process.env.NODE_ENV === "production",
     });
     return response;
@@ -37,6 +50,7 @@ export async function DELETE() {
     sameSite: "lax",
     path: "/",
     maxAge: 0,
+    secure: process.env.NODE_ENV === "production",
   });
   return response;
 }

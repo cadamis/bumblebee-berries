@@ -130,8 +130,8 @@ export default function OrderFlow({ days, pricePerCup }: Props) {
         <div className="bg-honey-400 text-honey-900 rounded-2xl px-5 py-3 mb-6 flex items-center gap-3 shadow-sm">
           <span className="text-2xl">🎁</span>
           <p className="font-semibold text-sm">
-            Buy 6 cups, get 1 free!{" "}
-            <span className="font-normal">Every 7th cup is on us.</span>
+            Buy 6 pints, get 1 free!{" "}
+            <span className="font-normal">Every 7th pint is on us.</span>
           </p>
         </div>
 
@@ -200,14 +200,14 @@ export default function OrderFlow({ days, pricePerCup }: Props) {
                   {formatDate(selectedDate)}
                   {selectedDay && (
                     <span className="ml-2 text-berry-500 text-xs">
-                      ({selectedDay.available} cups available)
+                      ({selectedDay.available} pints available)
                     </span>
                   )}
                 </p>
 
                 {/* Quantity picker */}
                 <div className="flex items-center gap-4">
-                  <span className="text-sm font-semibold text-berry-700">Cups:</span>
+                  <span className="text-sm font-semibold text-berry-700">Pints:</span>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -286,11 +286,11 @@ export default function OrderFlow({ days, pricePerCup }: Props) {
               <div className="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden mb-4">
                 <Row label="Pickup Date" value={formatDate(selectedDate)} />
                 <Row
-                  label="Cups"
+                  label="Pints"
                   value={
                     freeCups > 0
-                      ? `${quantity} cups (${freeCups} free!)`
-                      : `${quantity} cup${quantity !== 1 ? "s" : ""}`
+                      ? `${quantity} pints (${freeCups} free!)`
+                      : `${quantity} pint${quantity !== 1 ? "s" : ""}`
                   }
                 />
                 <Row
@@ -305,7 +305,7 @@ export default function OrderFlow({ days, pricePerCup }: Props) {
                 <div className="bg-honey-50 border border-honey-200 rounded-xl px-4 py-2.5 mb-4 text-sm text-honey-800 flex items-center gap-2">
                   <span>🎁</span>
                   <span>
-                    You're getting <strong>{freeCups} free cup{freeCups !== 1 ? "s" : ""}</strong> with
+                    You're getting <strong>{freeCups} free pint{freeCups !== 1 ? "s" : ""}</strong> with
                     this order!
                   </span>
                 </div>
@@ -344,7 +344,7 @@ export default function OrderFlow({ days, pricePerCup }: Props) {
                 We'll see you on{" "}
                 <strong>{formatDate(confirmedOrder.order_date)}</strong> with{" "}
                 <strong>
-                  {confirmedOrder.quantity} cup
+                  {confirmedOrder.quantity} pint
                   {confirmedOrder.quantity !== 1 ? "s" : ""}
                 </strong>{" "}
                 of raspberries.
@@ -360,7 +360,7 @@ export default function OrderFlow({ days, pricePerCup }: Props) {
                     <>
                       {fc > 0 && (
                         <p className="font-semibold text-honey-700 mb-1">
-                          🎁 Includes {fc} free cup{fc !== 1 ? "s" : ""}!
+                          🎁 Includes {fc} free pint{fc !== 1 ? "s" : ""}!
                         </p>
                       )}
                       <p>
@@ -368,7 +368,7 @@ export default function OrderFlow({ days, pricePerCup }: Props) {
                         <strong>
                           ${formatTotal(t)}
                         </strong>{" "}
-                        ({cc} cup{cc !== 1 ? "s" : ""} × ${pricePerCup}) at pickup.
+                        ({cc} pint{cc !== 1 ? "s" : ""} × ${pricePerCup}) at pickup.
                       </p>
                     </>
                   );
@@ -409,7 +409,7 @@ function PricingSummary({
     <div className="text-sm">
       <div className="flex justify-between items-baseline">
         <span className="text-berry-700">
-          {quantity} cup{quantity !== 1 ? "s" : ""}
+          {quantity} pint{quantity !== 1 ? "s" : ""}
           {freeCups > 0 && (
             <span className="ml-2 text-green-600 font-semibold">
               ({freeCups} free!)
@@ -426,7 +426,7 @@ function PricingSummary({
         </p>
       ) : showNextFreeHint ? (
         <p className="text-xs text-honey-700 mt-0.5">
-          Add {nextFreeAt} more cup{nextFreeAt !== 1 ? "s" : ""} to get 1 free!
+          Add {nextFreeAt} more pint{nextFreeAt !== 1 ? "s" : ""} to get 1 free!
         </p>
       ) : null}
     </div>

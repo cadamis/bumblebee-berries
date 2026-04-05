@@ -9,8 +9,6 @@ if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 
 const DB_PATH = path.join(DATA_DIR, "bumblebee.db");
 
-console.log(`[db] Using database at: ${DB_PATH}`);
-
 let _db: Database.Database | null = null;
 
 export function getDb(): Database.Database {
@@ -52,6 +50,14 @@ function initSchema(db: Database.Database) {
       amount_paid REAL    NOT NULL DEFAULT 0,
       created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS schedule_assignments (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      date      TEXT    NOT NULL,
+      helper_id INTEGER NOT NULL,
+      UNIQUE(date, helper_id),
+      FOREIGN KEY (helper_id) REFERENCES helpers(id) ON DELETE CASCADE
+    );
   `);
 
   // Seed default settings if they don't exist
@@ -63,6 +69,7 @@ function initSchema(db: Database.Database) {
   setDefault.run("inventory_cups", "0");
   setDefault.run("helper_pay_rate", "2.50");
   setDefault.run("schedule_weeks", "2");
+  setDefault.run("schedule_first_day", "");
   setDefault.run("schedule_last_day", "");
 }
 
@@ -154,6 +161,46 @@ export function createOrder(data: {
     .get(info.lastInsertRowid) as Order;
 }
 
+/**
+ * Atomically checks availability and creates the order inside a single
+ * transaction, eliminating the TOCTOU race condition.
+ * Returns the new Order, or null if availability is insufficient.
+ */
+export function createOrderIfAvailable(data: {
+  customer_name: string;
+  customer_phone: string;
+  order_date: string;
+  quantity: number;
+}): Order | null {
+  const db = getDb();
+  const defaultCap = parseInt(getSetting("default_daily_cap") ?? "20", 10);
+
+  return db.transaction((): Order | null => {
+    const cfg = db
+      .prepare("SELECT max_cups FROM day_config WHERE date = ?")
+      .get(data.order_date) as { max_cups: number } | undefined;
+    const maxCups = cfg?.max_cups ?? defaultCap;
+
+    const ordered = db
+      .prepare(
+        "SELECT COALESCE(SUM(quantity),0) AS total FROM orders WHERE order_date = ? AND status != 'cancelled'"
+      )
+      .get(data.order_date) as { total: number };
+
+    if (Math.max(0, maxCups - ordered.total) < data.quantity) return null;
+
+    const info = db
+      .prepare(
+        `INSERT INTO orders (customer_name, customer_phone, order_date, quantity)
+         VALUES (@customer_name, @customer_phone, @order_date, @quantity)`
+      )
+      .run(data);
+    return db
+      .prepare("SELECT * FROM orders WHERE id = ?")
+      .get(info.lastInsertRowid) as Order;
+  })();
+}
+
 export function getAllOrders(): Order[] {
   return getDb()
     .prepare("SELECT * FROM orders ORDER BY order_date ASC, created_at ASC")
@@ -200,18 +247,72 @@ export function createHelper(data: { name: string; phone: string }): Helper {
   return db.prepare("SELECT * FROM helpers WHERE id = ?").get(info.lastInsertRowid) as Helper;
 }
 
+const ALLOWED_HELPER_UPDATE_KEYS = new Set<string>([
+  "cups_picked",
+  "amount_paid",
+  "name",
+  "phone",
+]);
+
 export function updateHelper(
   id: number,
   data: { cups_picked?: number; amount_paid?: number; name?: string; phone?: string }
 ): void {
-  const fields = Object.keys(data)
-    .map((k) => `${k} = @${k}`)
-    .join(", ");
+  const safeEntries = Object.entries(data).filter(([k]) =>
+    ALLOWED_HELPER_UPDATE_KEYS.has(k)
+  );
+  if (safeEntries.length === 0) return;
+  const fields = safeEntries.map(([k]) => `${k} = @${k}`).join(", ");
   getDb()
     .prepare(`UPDATE helpers SET ${fields} WHERE id = @id`)
-    .run({ ...data, id });
+    .run({ ...Object.fromEntries(safeEntries), id });
 }
 
 export function deleteHelper(id: number): void {
   getDb().prepare("DELETE FROM helpers WHERE id = ?").run(id);
+}
+
+// ── Schedule assignment helpers ───────────────────────────────────────────────
+
+export interface ScheduleAssignment {
+  id: number;
+  date: string;
+  helper_id: number;
+  helper_name: string;
+}
+
+export function getAllScheduleAssignments(): ScheduleAssignment[] {
+  return getDb()
+    .prepare(
+      `SELECT sa.id, sa.date, sa.helper_id, h.name AS helper_name
+       FROM schedule_assignments sa
+       JOIN helpers h ON h.id = sa.helper_id
+       ORDER BY sa.date ASC, h.name ASC`
+    )
+    .all() as ScheduleAssignment[];
+}
+
+export function createScheduleAssignment(data: {
+  date: string;
+  helper_id: number;
+}): ScheduleAssignment | null {
+  const db = getDb();
+  const info = db
+    .prepare(
+      "INSERT OR IGNORE INTO schedule_assignments (date, helper_id) VALUES (@date, @helper_id)"
+    )
+    .run(data);
+  if (info.changes === 0) return null;
+  return db
+    .prepare(
+      `SELECT sa.id, sa.date, sa.helper_id, h.name AS helper_name
+       FROM schedule_assignments sa
+       JOIN helpers h ON h.id = sa.helper_id
+       WHERE sa.id = ?`
+    )
+    .get(info.lastInsertRowid) as ScheduleAssignment;
+}
+
+export function deleteScheduleAssignment(id: number): void {
+  getDb().prepare("DELETE FROM schedule_assignments WHERE id = ?").run(id);
 }

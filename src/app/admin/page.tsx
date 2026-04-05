@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/lib/auth";
-import { getAllOrders, getSetting, getDb, getAllHelpers } from "@/lib/db";
+import { getAllOrders, getSetting, getDb, getAllHelpers, getAllScheduleAssignments } from "@/lib/db";
 import AdminTabs from "@/components/AdminTabs";
 import BumblebeeLogo from "@/components/BumblebeeLogo";
 import Link from "next/link";
@@ -17,12 +17,14 @@ export default async function AdminPage() {
 
   const orders          = getAllOrders();
   const helpers         = getAllHelpers();
+  const assignments     = getAllScheduleAssignments();
   const pricePerCup     = getSetting("price_per_cup")     ?? "3.00";
   const defaultDailyCap = getSetting("default_daily_cap") ?? "20";
   const inventoryCups   = getSetting("inventory_cups")    ?? "0";
   const helperPayRate   = getSetting("helper_pay_rate")   ?? "2.50";
-  const scheduleWeeks   = getSetting("schedule_weeks")    ?? "2";
-  const scheduleLastDay = getSetting("schedule_last_day") ?? "";
+  const scheduleWeeks   = getSetting("schedule_weeks")     ?? "2";
+  const scheduleFirstDay = getSetting("schedule_first_day") ?? "";
+  const scheduleLastDay = getSetting("schedule_last_day")  ?? "";
   const dayConfigs      = getDb()
     .prepare("SELECT date, max_cups FROM day_config ORDER BY date ASC")
     .all() as DayConfig[];
@@ -61,6 +63,8 @@ export default async function AdminPage() {
           initialHelperPayRate={helperPayRate}
           initialScheduleWeeks={scheduleWeeks}
           initialScheduleLastDay={scheduleLastDay}
+          initialScheduleFirstDay={scheduleFirstDay}
+          initialAssignments={assignments}
         />
       </main>
     </div>

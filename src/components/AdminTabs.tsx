@@ -4,6 +4,7 @@ import { useState } from "react";
 import AdminOrderTable from "@/components/AdminOrderTable";
 import AdminSettingsPanel from "@/components/AdminSettingsPanel";
 import AdminHelpersPanel from "@/components/AdminHelpersPanel";
+import AdminSchedulePanel from "@/components/AdminSchedulePanel";
 import { calcPricing } from "@/lib/pricing";
 
 interface Order {
@@ -30,6 +31,13 @@ interface Helper {
   created_at: string;
 }
 
+interface ScheduleAssignment {
+  id: number;
+  date: string;
+  helper_id: number;
+  helper_name: string;
+}
+
 interface Props {
   initialOrders: Order[];
   pricePerCup: string;
@@ -41,13 +49,16 @@ interface Props {
   initialHelperPayRate: string;
   initialScheduleWeeks: string;
   initialScheduleLastDay: string;
+  initialScheduleFirstDay: string;
+  initialAssignments: ScheduleAssignment[];
 }
 
-type Tab = "orders" | "helpers" | "settings";
+type Tab = "orders" | "helpers" | "schedule" | "settings";
 
 const TABS: { id: Tab; label: string; emoji: string }[] = [
   { id: "orders",   label: "Orders & Inventory", emoji: "📦" },
   { id: "helpers",  label: "Helpers",             emoji: "🫐" },
+  { id: "schedule", label: "Schedule",            emoji: "📅" },
   { id: "settings", label: "Settings",            emoji: "⚙️" },
 ];
 
@@ -62,11 +73,14 @@ export default function AdminTabs({
   initialHelperPayRate,
   initialScheduleWeeks,
   initialScheduleLastDay,
+  initialScheduleFirstDay,
+  initialAssignments,
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("orders");
-  const [orders, setOrders]       = useState<Order[]>(initialOrders);
-  const [helpers, setHelpers]     = useState<Helper[]>(initialHelpers);
-  const [invCups, setInvCups]     = useState(parseInt(inventoryCups, 10) || 0);
+  const [orders, setOrders]           = useState<Order[]>(initialOrders);
+  const [helpers, setHelpers]         = useState<Helper[]>(initialHelpers);
+  const [assignments, setAssignments] = useState<ScheduleAssignment[]>(initialAssignments);
+  const [invCups, setInvCups]         = useState(parseInt(inventoryCups, 10) || 0);
 
   // Live-computed stats
   const pending          = orders.filter((o) => o.status === "pending");
@@ -144,6 +158,7 @@ export default function AdminTabs({
               orders={orders}
               setOrders={setOrders}
               pricePerCup={pricePerCup}
+              invCups={invCups}
               onStatusChange={(order, newStatus) => {
                 if (newStatus === "fulfilled") {
                   adjustInventory(-order.quantity);
@@ -165,6 +180,15 @@ export default function AdminTabs({
         />
       )}
 
+      {activeTab === "schedule" && (
+        <AdminSchedulePanel
+          helpers={helpers}
+          assignments={assignments}
+          setAssignments={setAssignments}
+          scheduleLastDay={initialScheduleLastDay}
+        />
+      )}
+
       {activeTab === "settings" && (
         <section>
           <AdminSettingsPanel
@@ -174,6 +198,7 @@ export default function AdminTabs({
             initialHelperPayRate={initialHelperPayRate}
             initialScheduleWeeks={initialScheduleWeeks}
             initialScheduleLastDay={initialScheduleLastDay}
+            initialScheduleFirstDay={initialScheduleFirstDay}
           />
         </section>
       )}
@@ -222,7 +247,7 @@ function InventorySection({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
           <div className="text-center p-4 bg-berry-50 rounded-xl border border-berry-200">
             <div className="text-3xl font-bold text-berry-700">{onHand}</div>
-            <div className="text-sm text-berry-600 mt-1">Cups on hand</div>
+            <div className="text-sm text-berry-600 mt-1">Pints on hand</div>
           </div>
           <div className="text-center p-4 bg-yellow-50 rounded-xl border border-yellow-200">
             <div className="text-3xl font-bold text-yellow-700">{pendingCups}</div>
@@ -244,7 +269,7 @@ function InventorySection({
 
         <div className="flex items-center gap-3">
           <label className="text-sm font-medium text-gray-700 shrink-0">
-            Update cups on hand:
+            Update pints on hand:
           </label>
           <input
             type="number"
